@@ -1,0 +1,69 @@
+#!/usr/bin/env ruby
+require 'pp'
+require 'yaml'
+require 'treetop'
+require 'json'
+
+require_relative '../lib/jpt.rb'
+ 
+Encoding.default_external = Encoding::UTF_8
+require 'optparse'
+require 'ostruct'
+
+$options = OpenStruct.new
+begin
+  op = OptionParser.new do |opts|
+    opts.banner = "Usage: jpt.rb [options] file.jp"
+
+    opts.on("-v", "--[no-]verbose", "Run verbosely") do |v|
+      $options.verbose = v
+    end
+    opts.on("-l", "--[no-]lines", "multi-line mode") do |v|
+      $options.lines = v
+    end
+    opts.on("-tFMT", "--to=FMT", [:basic, :neat, :json, :yaml, :enum, :jp], "Target format") do |v|
+      $options.target = v
+    end
+  end
+  op.parse!
+rescue Exception => e
+  warn e
+  exit 1
+end
+
+if ARGV == []
+  puts op
+  exit 1
+end
+jp_file = ARGF.read
+
+if $options.lines
+  lines = jp_file.lines(chomp: true)
+  col = lines.map(&:length).max
+  form = "%-#{col}s %s"
+  lines.each do |line|
+    jpt = JPT.from_jp(line)
+    result = jpt.tree.inspect
+    puts form % [line, result]
+  end
+else
+
+jpt = JPT.from_jp(jp_file)
+result = jpt.tree
+
+case $options.target
+when :basic, nil
+  pp result
+when :neat, :json
+  require 'neatjson'
+  puts JSON.neat_generate(result, after_comma: 1, after_colon: 1)
+when :yaml
+  puts result.to_yaml
+when :jp
+  require_relative '../lib/writer/jp-writer.rb'
+  puts jpt.to_s
+else
+  warn ["Unknown target format: ", $options.target].inspect
+end
+
+end
