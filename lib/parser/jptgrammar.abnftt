@@ -205,12 +205,32 @@ comparison-op       = "==" / "!=" /
                       "<"  / ">"
 
 singular-path       = rel-singular-path / abs-singular-path
-rel-singular-path   = current-node-identifier singular-path-segments
-abs-singular-path   = root-identifier singular-path-segments
-singular-path-segments = *(S (name-segment / index-segment))
+rel-singular-path   = current-node-identifier singular-path-segments {
+  def ast
+    ["@", *singular_path_segments.ast]
+  end
+}
+abs-singular-path   = root-identifier singular-path-segments {
+  def ast
+    ["@", *singular_path_segments.ast]
+  end
+}
+singular-path-segments = *(S (name-segment / index-segment)){
+  def ast
+    elements.map{|el| el.elements[1]}.map(&:ast)
+  end
+}
 name-segment        = ("[" name-selector "]") /
-                      ("." member-name-shorthand)
-index-segment       = "[" index-selector "]"
+                      ("." member-name-shorthand){
+  def ast
+    elements[1].ast
+  end
+}
+index-segment       = "[" index-selector "]"{
+  def ast
+    elements[1].ast
+  end
+}
 
 
 number              = (int / "-0") [ frac ] [ exp ] {
