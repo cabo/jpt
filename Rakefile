@@ -13,3 +13,6 @@ file "lib/parser/jptgrammar.treetop" => "lib/parser/jptgrammar.abnftt" do
   sh "diff lib/parser/jptgrammar.abnf lib/parser/jpt.abnf.orig"
 end
 
+task :linetest => :build do
+  sh "bin/jpt -l test-data/test.jpl"
+end
