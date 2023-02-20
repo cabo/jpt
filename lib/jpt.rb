@@ -1,7 +1,51 @@
+module JPTType
+  # :value, :nodes, :logical
+
+  FUNCTABLE = {
+    "length" => [:value, :value],
+    "count" => [:value, :nodes],
+    "match" => [:logical, :value, :value],
+    "search" => [:logical, :value, :value],
+  }
+
+  def declared_type(ast)
+    case ast
+    in Numeric | String | false | true | nil
+      :value
+    in ["@", *] | ["$", *]
+      :nodes
+    in ["func", funcname, *funcargs]
+      ret, *parms = FUNCTABLE[funcname]
+      if parms.length != funcargs.length
+        warn "*** Incorrect number of arguments #{ast} #{parms.inspect} #{funcargs.inspect}"
+      else
+        parms.zip(funcargs).each do |pm, ar|
+          declared_as(ar, pm, " in #{ast}") # XXX overhead
+        end
+      end
+      ret
+    end
+  end
+
+  def declared_as(ast, rt, s = "")
+    dt = declared_type(ast)
+    case [dt, rt]
+    in a, b if a == b
+      true
+    in [:nodes, :value] | [:nodes, :logical]
+      true
+    else
+      warn "*** Cannot use #{ast} with declared_type #{dt||:undefined} for required type #{rt}#{s}"
+      false
+    end
+  end
+end
+
 require_relative "parser/jpt-util.rb"
 
 class JPT
   @@parser = JPTGRAMMARParser.new
+  include ::JPTType
 
   DATA_DIR = Pathname.new(__FILE__) + "../../data/"
 

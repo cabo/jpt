@@ -160,10 +160,14 @@ test-expr           = [logical-not-op S]
                       (filter-path / ; path existence or non-existence
                        function-expr) {
   def ast
+    nest_ast = elements[1].ast
+    if nest_ast[0] == "func"
+      declared_as(nest_ast, :logical, " in test expression")
+    end
     if elements[0].text_value == ''
-      elements[1].ast
+      nest_ast
     else
-      ["not", elements[1].ast]
+      ["not", nest_ast]
     end
   end
 }; OptionalBooleanType or subtype
@@ -191,7 +195,11 @@ logical-not-op      = "!"               ; logical NOT operator
 
 comparison-expr     = comparable S comparison-op S comparable {
   def ast
-    [comparison_op.text_value, elements[0].ast, elements[4].ast]
+    sides = [elements[0].ast, elements[4].ast]
+    sides.each do |s|
+      declared_as(s, :value, " in comparable")
+    end
+    [comparison_op.text_value, *sides]
   end
 }
 literal             = number / string-literal /
