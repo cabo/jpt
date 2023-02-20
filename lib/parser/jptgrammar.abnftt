@@ -228,7 +228,11 @@ singular-path-segments = *(S (name-segment / index-segment)){
     elements.map{|el| el.elements[1]}.map(&:ast)
   end
 }
-name-segment        = ("[" name-selector "]") /
+name-segment        = ("[" name-selector "]") {
+  def ast
+    elements[1].ast
+  end
+}/
                       ("." member-name-shorthand){
   def ast
     elements[1].ast
