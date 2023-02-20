@@ -1,5 +1,9 @@
 task :default => :build
 
+task :gbi => "lib/parser/jptgrammar.rb" do
+  sh "time gebuin jpt.gemspec"
+end
+
 task :build => "lib/parser/jptgrammar.rb" do
   sh "gem build jpt.gemspec"
 end
