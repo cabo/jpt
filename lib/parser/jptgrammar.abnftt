@@ -294,10 +294,11 @@ child-segment       = bracketed-selection /
 
 bracketed-selection = "[" S selector *(S "," S selector) S "]" {
   def ast
+    first_ast = elements[2].ast
     if elements[3].text_value == ''
-      elements[2].ast
+      first_ast
     else
-      ["u", *elements[3].map{|el| el.elements[3].ast}]
+      ["u", first_ast, *elements[3].elements.map{|el| el.elements[3].ast}]
     end
   end
 }
