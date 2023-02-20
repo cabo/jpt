@@ -1,6 +1,6 @@
 Gem::Specification.new do |s|
   s.name = "jpt"
-  s.version = "0.0.1"
+  s.version = "0.0.2"
   s.summary = "JSONPath tools"
   s.description = %q{jpt implements converters and miscellaneous tools for JSONPath}
   s.author = "Carsten Bormann"
@@ -15,6 +15,6 @@ Gem::Specification.new do |s|
 
   s.add_development_dependency 'bundler', '~>1'
   s.add_dependency 'treetop', '~>1'
-  s.add_dependency 'json'
-  s.add_dependency 'neatjson'
+#  s.add_dependency 'json'
+  s.add_dependency 'neatjson', '~>0.10'
 end
