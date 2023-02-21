@@ -89,4 +89,198 @@ class JPT
     Marshal.load(Marshal.dump(self))
   end
 
+  def apply(arg)
+    nodes = [arg]
+    select_query(tree, nodes, nodes, :error)
+  end
+
+  def select_query(tree, nodes, root_node, curr_node)
+    case tree
+    in ["$", *segments]
+      nodes = root_node
+      segments.each do |seg|
+        nodes = select_segment(seg, nodes, root_node, curr_node)
+      end
+    in ["@", *segments]
+      nodes = curr_node
+      segments.each do |seg|
+        nodes = select_segment(seg, nodes, root_node, curr_node)
+      end
+    end
+    nodes
+  end
+
+  def select_segment(seg, nodes, root_node, curr_node)
+    case seg
+    in Integer => ix
+      nodes = nodes.flat_map do |n|
+        if Array === n
+         [n.fetch(ix, :nothing)]
+        else []
+        end
+      end
+    in String => ky
+      nodes = nodes.flat_map do |n|
+        if Hash === n
+          [n.fetch(ky, :nothing)]
+        else []
+        end
+      end
+    in ["u", *sel]
+      nodes = sel.flat_map{ |sel1| select_segment(sel1, nodes, root_node, curr_node)}
+    in ["wild"]
+      nodes = nodes.flat_map do |n|
+        case n
+        in Array
+          n
+        in Hash
+          n.map{|k, v| v}
+        else
+          []
+        end
+      end
+    in ["desc", sel]
+      nodes = nodes.flat_map do |n|
+        containers(n)
+      end
+      nodes = select_segment(sel, nodes, root_node, curr_node)
+    in ["slice", st, en, sp]
+      nodes = nodes.flat_map do |n|
+        if (Array === n) && sp != 0
+          len = n.length
+          ret = []
+          sp ||= 1
+          if sp > 0             # weird formulae copied from spec
+            st ||= 0
+            en ||= len
+          else
+            # warn "ARR #{st} #{en} #{sp}"
+            st ||= len - 1
+            en ||= -len - 1
+            # warn "ARR2 #{st} #{en} #{sp}"
+          end
+          st, en = [st, en].map{|i| i >= 0 ? i : len + i}
+          if sp > 0
+            lo = [[st, 0].max, len].min
+            up = [[en, 0].max, len].min
+            while lo < up
+              ret << n[lo]; lo += sp
+            end
+          else
+            up = [[st, -1].max, len-1].min
+            lo = [[en, -1].max, len-1].min
+            # warn "ARR3 #{st} #{en} #{sp} #{lo} #{up}"
+            while lo < up
+              ret << n[up]; up += sp
+            end
+          end
+          ret
+        else
+          []
+        end
+      end
+    in ["filt", logexp]
+      nodes = nodes.flat_map do |n|
+        if Array === n
+          n.flat_map do |cand|
+            a = filt_apply(logexp, root_node, [cand])
+            # warn "***A #{a.inspect}"
+            if filt_to_logical(a)
+              [cand]
+            else
+              []
+            end
+          end
+        else
+          []
+        end
+      end
+    end
+    nodes.delete(:nothing)
+    nodes
+  end
+
+  def containers(n)
+    case n
+    in Array
+      [n, *n.flat_map{containers(_1)}]
+    in Hash
+      [n, *n.flat_map{|k, v| containers(v)}]
+    else
+      []
+    end
+  end
+
+  def filt_to_logical(val)
+    case val
+    in [:nodes, v]
+      v != []
+    in [:logical, v]
+      v
+    end
+  end
+
+  def filt_to_value(val)
+    case val
+    in [:nodes, v]
+      if v.length == 1
+        v[0]
+      else
+        :nothing
+      end
+    in [:value, v]
+      v
+    end
+  end
+
+  def filt_apply(logexp, root_node, curr_node)
+    # warn "***B #{logexp.inspect} #{cand.inspect} #{root_node} #{curr_node}"
+    case logexp
+    in ["@", *]
+      [:nodes, select_query(logexp, curr_node, root_node, curr_node)]
+    in ["$", *]
+      [:nodes, select_query(logexp, root_node, root_node, curr_node)]
+    in [("==" | "!=" | "<" | ">" | "<=" | ">="), a, b]
+      lhs = filt_to_value(filt_apply(a, root_node, curr_node))
+      rhs = filt_to_value(filt_apply(b, root_node, curr_node))
+      op = logexp[0]
+      warn "***C #{op} #{lhs.inspect}, #{rhs.inspect}"
+      [:logical, begin
+                   case op
+                   in "=="
+                     lhs == rhs
+                   in "!="
+                     lhs != rhs
+                   in "<="
+                     lhs <= rhs
+                   in ">="
+                     lhs >= rhs
+                   in "<"
+                     lhs < rhs
+                   in ">"
+                     lhs > rhs
+                   end
+                 rescue 
+                   false
+                 end] # XXX
+    in ["and" | "or", a, b]
+      lhs = filt_to_logical(filt_apply(a, root_node, curr_node))
+      rhs = filt_to_logical(filt_apply(b, root_node, curr_node))
+      op = logexp[0]
+      # warn "***C #{op} #{lhs.inspect}, #{rhs.inspect}"
+      [:logical, case op
+                 in "or"
+                   lhs || rhs
+                 in "and"
+                   lhs && rhs
+                 end]
+    in ["not", a]
+      lhs = filt_to_logical(filt_apply(a, root_node, curr_node))
+      [:logical, !lhs]
+    in [:func, name, *args]
+      [:value, :nothing]        # XXX
+    in String | Numeric | false | true | nil
+      [:value, logexp]
+    end
+  end
 end
