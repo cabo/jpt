@@ -1,12 +1,19 @@
 module JPTType
   # :value, :nodes, :logical
 
+
+  FUNCSIG_CHARS = {"l" => :logical, "n" => :nodes, "v" => :value}
+
   FUNCTABLE = {
     "length" => [:value, :value],
     "count" => [:value, :nodes],
     "match" => [:logical, :value, :value],
     "search" => [:logical, :value, :value],
   }
+
+  def self.add_funcsig(name, sig)
+    FUNCTABLE[name] = sig.chars.map {FUNCSIG_CHARS[_1]}
+  end
 
   def declared_type(ast)
     case ast

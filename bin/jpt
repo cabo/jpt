@@ -10,6 +10,8 @@ Encoding.default_external = Encoding::UTF_8
 require 'optparse'
 require 'ostruct'
 
+FUNCSIG_CHARS = {"l" => :logical, "n" => :nodes, "v" => :value}
+
 $options = OpenStruct.new
 begin
   op = OptionParser.new do |opts|
@@ -20,6 +22,11 @@ begin
     end
     opts.on("-l", "--[no-]lines", "multi-line mode") do |v|
       $options.lines = v
+    end
+    opts.on("-fFUNCSIG", "--[no-]f=FUNCSIG", "add function signature name=rppp") do |v|
+      fail "funcsig format must be name=rppp" unless v =~ /\A([a-z][_a-z0-9]*)-([lnv]+)\z/
+      
+      JPTType.add_funcsig($1, $2)
     end
     opts.on("-tFMT", "--to=FMT", [:basic, :neat, :json, :yaml, :enum, :jp], "Target format") do |v|
       $options.target = v
