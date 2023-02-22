@@ -280,8 +280,49 @@ class JPT
     in ["not", a]
       lhs = filt_to_logical(filt_apply(a, root_node, curr_node))
       [:logical, !lhs]
-    in [:func, name, *args]
-      [:value, :nothing]        # XXX
+    in ["func", "length", value]
+      value = filt_to_value(filt_apply(value, root_node, curr_node))
+      [:value,
+       case value
+       in Hash | Array | String
+         value.length
+       else
+         :nothing
+       end
+      ]
+    in ["func", "count", nodes]
+      ty, nodes = filt_apply(nodes, root_node, curr_node)
+      [:value,
+       if ty != :nodes
+         warn "*** ty #{ty.inspect}"
+         0
+       else
+         nodes.length
+       end]
+    in ["func", "match", str, re]
+      str = filt_to_value(filt_apply(str, root_node, curr_node))
+      re = filt_to_value(filt_apply(re, root_node, curr_node))
+      [:logical,
+       begin
+         regexp = /\A(?:#{re})\z/
+         str =~ regexp
+       rescue => e
+         warn "*** #{e.detailed_message} #{e.backtrace}"
+         false
+       end
+      ]
+    in ["func", "search", str, re]
+      str = filt_to_value(filt_apply(str, root_node, curr_node))
+      re = filt_to_value(filt_apply(re, root_node, curr_node))
+      [:logical,
+       begin
+         regexp = /#{re}/
+         str =~ regexp
+       rescue => e
+         warn "*** #{e.detailed_message} #{e.backtrace}"
+         false
+       end
+      ]
     in String | Numeric | false | true | nil
       [:value, logexp]
     end
