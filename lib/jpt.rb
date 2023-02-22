@@ -127,7 +127,10 @@ class JPT
         end
       end
     in ["u", *sel]
-      nodes = sel.flat_map{ |sel1| select_segment(sel1, nodes, root_node, curr_node)}
+#      nodes = sel.flat_map{ |sel1| select_segment(sel1, nodes, root_node, curr_node)}
+      nodes = nodes.flat_map do |n|
+        sel.flat_map{ |sel1| select_segment(sel1, [n], root_node, curr_node)}
+      end
     in ["wild"]
       nodes = nodes.flat_map do |n|
         case n
