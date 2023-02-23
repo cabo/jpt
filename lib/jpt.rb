@@ -236,6 +236,8 @@ class JPT
     end
   end
 
+  COMPARE_SWAP = {">" => "<", ">=" => "<="}
+
   def filt_apply(logexp, root_node, curr_node)
     # warn "***B #{logexp.inspect} #{root_node.inspect} #{curr_node.inspect}"
     case logexp
@@ -247,25 +249,29 @@ class JPT
       lhs = filt_to_value(filt_apply(a, root_node, curr_node))
       rhs = filt_to_value(filt_apply(b, root_node, curr_node))
       op = logexp[0]
-      warn "***C #{op} #{lhs.inspect}, #{rhs.inspect}"
-      [:logical, begin
-                   case op
-                   in "=="
-                     lhs == rhs
-                   in "!="
-                     lhs != rhs
-                   in "<="
-                     lhs <= rhs
-                   in ">="
-                     lhs >= rhs
-                   in "<"
-                     lhs < rhs
-                   in ">"
-                     lhs > rhs
-                   end
-                 rescue 
-                   false
-                 end] # XXX
+      # warn "***C #{op} #{lhs.inspect}, #{rhs.inspect}"
+      if sop = COMPARE_SWAP[op]
+        lhs, rhs = rhs, lhs
+        op = sop
+      end
+      # warn "***C1 #{op} #{lhs.inspect}, #{rhs.inspect}"
+      res = if op != "<" && (lhs == rhs rescue false)
+              op == "!=" ? false : true
+            else
+              if op[0] == "<"   # "<" or "<="
+                case [lhs, rhs]
+                in Numeric, Numeric
+                  lhs < rhs
+                in String, String
+                  lhs < rhs
+                else
+                  false
+                end
+              else op == "!="
+              end
+            end
+      # warn "***C9 #{res}"
+      [:logical, res]
     in ["and" | "or", a, b]
       lhs = filt_to_logical(filt_apply(a, root_node, curr_node))
       rhs = filt_to_logical(filt_apply(b, root_node, curr_node))
