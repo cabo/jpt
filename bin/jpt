@@ -23,6 +23,9 @@ begin
     opts.on("-l", "--[no-]lines", "multi-line mode") do |v|
       $options.lines = v
     end
+    opts.on("-q", "--[no-]test", "test-file mode") do |v|
+      $options.test = v
+    end
     opts.on("-fFUNCSIG", "--[no-]f=FUNCSIG", "add function signature name=rppp") do |v|
       fail "funcsig format must be name=rppp" unless v =~ /\A([a-z][_a-z0-9]*)-([lnv]+)\z/
       
@@ -44,7 +47,30 @@ if ARGV == []
 end
 jp_file = ARGF.read
 
-if $options.lines
+if $options.test
+  argument = query = output = nil
+  jp_file.scan(/((?:^(?:$|[^$=].*)\n)+)|([$].*)|=(.*)|#.*/) do |arg,qy,out|
+    begin
+      if arg
+        argument = JSON.parse(arg)
+        puts
+        puts JSON.dump(argument)
+      elsif qy
+        jpt = JPT.from_jp(qy)
+        output = jpt.apply(argument)
+        print jpt.tree.inspect << " "
+        puts "➔ #{JSON.dump(output)}"
+      elsif out
+        suggested = JSON.parse(out)
+        if output != suggested
+          p [:SUGGESTED, suggested]
+        end
+      end
+    rescue => e
+      warn "*** #{e.detailed_message} #{e.backtrace}"
+    end
+  end
+elsif $options.lines
   lines = jp_file.lines(chomp: true)
   col = lines.map(&:length).max
   form = "%-#{col}s %s"
