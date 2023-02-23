@@ -133,14 +133,7 @@ class JPT
       end
     in ["wild"]
       nodes = nodes.flat_map do |n|
-        case n
-        in Array
-          n
-        in Hash
-          n.map{|k, v| v}
-        else
-          []
-        end
+        enumerate(n)
       end
     in ["desc", sel]
       nodes = nodes.flat_map do |n|
@@ -184,23 +177,30 @@ class JPT
       end
     in ["filt", logexp]
       nodes = nodes.flat_map do |n|
-        if Array === n
-          n.flat_map do |cand|
-            a = filt_apply(logexp, root_node, [cand])
-            # warn "***A #{a.inspect}"
-            if filt_to_logical(a)
-              [cand]
-            else
-              []
-            end
+        enumerate(n).flat_map do |cand|
+          a = filt_apply(logexp, root_node, [cand])
+          # warn "***A #{a.inspect}"
+          if filt_to_logical(a)
+            [cand]
+          else
+            []
           end
-        else
-          []
         end
       end
     end
     nodes.delete(:nothing)
     nodes
+  end
+
+  def enumerate(n)
+    case n
+    in Array
+      n
+    in Hash
+      n.map{|k, v| v}
+    else
+      []
+    end
   end
 
   def containers(n)
