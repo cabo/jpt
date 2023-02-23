@@ -246,8 +246,8 @@ class JPT
     in ["$", *]
       [:nodes, select_query(logexp, root_node, root_node, curr_node)]
     in [("==" | "!=" | "<" | ">" | "<=" | ">="), a, b]
-      lhs = filt_to_value(filt_apply(a, root_node, curr_node))
-      rhs = filt_to_value(filt_apply(b, root_node, curr_node))
+      lhs = filt_to_value(filt_apply(a, root_node, curr_node)) rescue :nothing
+      rhs = filt_to_value(filt_apply(b, root_node, curr_node)) rescue :nothing
       op = logexp[0]
       # warn "***C #{op} #{lhs.inspect}, #{rhs.inspect}"
       if sop = COMPARE_SWAP[op]
@@ -327,6 +327,9 @@ class JPT
          false
        end
       ]
+    in ["func", name, *args]
+      warn "*** Unknown function extension #{name} with args #{args.inspect}"
+      [:logical, false]
     in String | Numeric | false | true | nil
       [:value, logexp]
     end
