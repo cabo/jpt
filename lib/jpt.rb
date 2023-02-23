@@ -294,7 +294,7 @@ class JPT
       ty, nodes = filt_apply(nodes, root_node, curr_node)
       [:value,
        if ty != :nodes
-         warn "*** ty #{ty.inspect}"
+         warn "*** func count ty #{ty.inspect}"
          0
        else
          nodes.length
@@ -304,8 +304,7 @@ class JPT
       re = filt_to_value(filt_apply(re, root_node, curr_node))
       [:logical,
        begin
-         regexp = /\A(?:#{re})\z/
-         str =~ regexp
+         /\A(?:#{re})\z/ === str
        rescue => e
          warn "*** #{e.detailed_message} #{e.backtrace}"
          false
@@ -316,8 +315,7 @@ class JPT
       re = filt_to_value(filt_apply(re, root_node, curr_node))
       [:logical,
        begin
-         regexp = /#{re}/
-         str =~ regexp
+         /#{re}/ === str
        rescue => e
          warn "*** #{e.detailed_message} #{e.backtrace}"
          false
