@@ -237,7 +237,7 @@ class JPT
   end
 
   def filt_apply(logexp, root_node, curr_node)
-    # warn "***B #{logexp.inspect} #{cand.inspect} #{root_node} #{curr_node}"
+    # warn "***B #{logexp.inspect} #{root_node.inspect} #{curr_node.inspect}"
     case logexp
     in ["@", *]
       [:nodes, select_query(logexp, curr_node, root_node, curr_node)]

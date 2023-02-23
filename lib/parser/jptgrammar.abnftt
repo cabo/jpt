@@ -220,7 +220,7 @@ rel-singular-path   = current-node-identifier singular-path-segments {
 }
 abs-singular-path   = root-identifier singular-path-segments {
   def ast
-    ["@", *singular_path_segments.ast]
+    ["$", *singular_path_segments.ast]
   end
 }
 singular-path-segments = *(S (name-segment / index-segment)){
