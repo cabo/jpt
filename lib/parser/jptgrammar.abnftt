@@ -1,10 +1,10 @@
-jptgrammar = json-path S {
+jptgrammar = jsonpath-query S {
   def ast
     json_path.ast
   end
 }
 
-json-path           = root-identifier segments {
+jsonpath-query      = root-identifier segments {
   def ast
     ["$", *segments.ast]
   end
@@ -122,14 +122,14 @@ S                   = *B        ; optional blank space
 
 
 
-filter-selector     = "?" S boolean-expr {
+filter-selector     = "?" S logical-expr {
   def ast
-    ["filt", boolean_expr.ast]
+    ["filt", logical_expr.ast]
   end
 }
 
 
-boolean-expr        = logical-or-expr
+logical-expr        = logical-or-expr
 logical-or-expr     = logical-and-expr *(S "||" S logical-and-expr) {
   def ast
     if elements[1].text_value == ''
@@ -156,8 +156,22 @@ logical-and-expr    = basic-expr *(S "&&" S basic-expr) {
 basic-expr          = paren-expr /
                       comparison-expr /
                       test-expr
+
+paren-expr          = [logical-not-op S] "(" S logical-expr S ")" {
+  def ast
+    if elements[0].text_value == ''
+      elements[3].ast
+    else
+      ["not", elements[3].ast]
+    end
+  end
+}
+                                        ; parenthesized expression
+logical-not-op      = "!"               ; logical NOT operator
+
+
 test-expr           = [logical-not-op S]
-                      (filter-path / ; path existence or non-existence
+                      (filter-query / ; existence/non-existence
                        function-expr) {
   def ast
     nest_ast = elements[1].ast
@@ -170,27 +184,15 @@ test-expr           = [logical-not-op S]
       ["not", nest_ast]
     end
   end
-}; OptionalBooleanType or subtype
-filter-path         = rel-path / json-path
-rel-path            = current-node-identifier segments {
+}; LogicalType or
+filter-query         = rel-query / jsonpath-query
+rel-query            = current-node-identifier segments {
   def ast
     ["@", *segments.ast]
   end
 }
 current-node-identifier = "@"
 
-
-paren-expr          = [logical-not-op S] "(" S boolean-expr S ")" {
-  def ast
-    if elements[0].text_value == ''
-      elements[3].ast
-    else
-      ["not", elements[3].ast]
-    end
-  end
-}
-                                        ; parenthesized expression
-logical-not-op      = "!"               ; logical NOT operator
 
 
 comparison-expr     = comparable S comparison-op S comparable {
@@ -205,25 +207,24 @@ comparison-expr     = comparable S comparison-op S comparable {
 literal             = number / string-literal /
                       true / false / null
 comparable          = literal /
-                      singular-path /   ; Singular Path value
-                      function-expr  ; OptionalNodeOrValueType
-                                     ; or subtype
+                      singular-query /   ; Singular Query value
+                      function-expr  ; ValueType
 comparison-op       = "==" / "!=" /
                       "<=" / ">=" /
                       "<"  / ">"
 
-singular-path       = rel-singular-path / abs-singular-path
-rel-singular-path   = current-node-identifier singular-path-segments {
+singular-query       = rel-singular-query / abs-singular-query
+rel-singular-query   = current-node-identifier singular-query-segments {
   def ast
     ["@", *singular_path_segments.ast]
   end
 }
-abs-singular-path   = root-identifier singular-path-segments {
+abs-singular-query   = root-identifier singular-query-segments {
   def ast
     ["$", *singular_path_segments.ast]
   end
 }
-singular-path-segments = *(S (name-segment / index-segment)){
+singular-query-segments = *(S (name-segment / index-segment)){
   def ast
     elements.map{|el| el.elements[1]}.map(&:ast)
   end
@@ -280,7 +281,7 @@ function-expr       = function-name "(" S [function-argument
   end
 }
 function-argument   = literal /
-                      filter-path / ; (includes singular-path)
+                      filter-query / ; (includes singular-query)
                       function-expr
 
 

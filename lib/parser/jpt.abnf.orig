@@ -1,6 +1,6 @@
-jptgrammar = json-path S
+jptgrammar = jsonpath-query S
 
-json-path           = root-identifier segments
+jsonpath-query      = root-identifier segments
 segments            = *(S segment)
 
 
@@ -82,10 +82,10 @@ S                   = *B        ; optional blank space
 
 
 
-filter-selector     = "?" S boolean-expr
+filter-selector     = "?" S logical-expr
 
 
-boolean-expr        = logical-or-expr
+logical-expr        = logical-or-expr
 logical-or-expr     = logical-and-expr *(S "||" S logical-and-expr)
                         ; disjunction
                         ; binds less tightly than conjunction
@@ -96,34 +96,35 @@ logical-and-expr    = basic-expr *(S "&&" S basic-expr)
 basic-expr          = paren-expr /
                       comparison-expr /
                       test-expr
-test-expr           = [logical-not-op S]
-                      (filter-path / ; path existence or non-existence
-                       function-expr) ; OptionalBooleanType or subtype
-filter-path         = rel-path / json-path
-rel-path            = current-node-identifier segments
-current-node-identifier = "@"
 
-
-paren-expr          = [logical-not-op S] "(" S boolean-expr S ")"
+paren-expr          = [logical-not-op S] "(" S logical-expr S ")"
                                         ; parenthesized expression
 logical-not-op      = "!"               ; logical NOT operator
+
+
+test-expr           = [logical-not-op S]
+                     (filter-query / ; existence/non-existence
+                      function-expr) ; LogicalType or
+                                     ; NodesType
+filter-query         = rel-query / jsonpath-query
+rel-query            = current-node-identifier segments
+current-node-identifier = "@"
 
 
 comparison-expr     = comparable S comparison-op S comparable
 literal             = number / string-literal /
                       true / false / null
 comparable          = literal /
-                      singular-path /   ; Singular Path value
-                      function-expr  ; OptionalNodeOrValueType
-                                     ; or subtype
+                      singular-query / ; Singular Query value
+                      function-expr    ; ValueType
 comparison-op       = "==" / "!=" /
                       "<=" / ">=" /
                       "<"  / ">"
 
-singular-path       = rel-singular-path / abs-singular-path
-rel-singular-path   = current-node-identifier singular-path-segments
-abs-singular-path   = root-identifier singular-path-segments
-singular-path-segments = *(S (name-segment / index-segment))
+singular-query       = rel-singular-query / abs-singular-query
+rel-singular-query   = current-node-identifier singular-query-segments
+abs-singular-query   = root-identifier singular-query-segments
+singular-query-segments = *(S (name-segment / index-segment))
 name-segment        = ("[" name-selector "]") /
                       ("." member-name-shorthand)
 index-segment       = "[" index-selector "]"
@@ -145,7 +146,7 @@ LCALPHA             = %x61-7A  ; "a".."z"
 function-expr       = function-name "(" S [function-argument
                          *(S "," S function-argument)] S ")"
 function-argument   = literal /
-                      filter-path / ; (includes singular-path)
+                      filter-query / ; (includes singular-query)
                       function-expr
 
 
