@@ -1,6 +1,6 @@
 jptgrammar = jsonpath-query S {
   def ast
-    json_path.ast
+    jsonpath_query.ast
   end
 }
 
@@ -207,8 +207,8 @@ comparison-expr     = comparable S comparison-op S comparable {
 literal             = number / string-literal /
                       true / false / null
 comparable          = literal /
-                      singular-query /   ; Singular Query value
-                      function-expr  ; ValueType
+                      singular-query / ; Singular Query value
+                      function-expr    ; ValueType
 comparison-op       = "==" / "!=" /
                       "<=" / ">=" /
                       "<"  / ">"
