@@ -15,6 +15,13 @@ module JPTType
     FUNCTABLE[name] = sig.chars.map {FUNCSIG_CHARS[_1]}
   end
 
+  def query_singular?(ast)
+    case ast
+    in [("@" | "$"), *segments]
+      ! segments.any? {|segment| Array === segment}
+    end
+  end
+
   def declared_type(ast)
     case ast
     in Numeric | String | false | true | nil
@@ -39,7 +46,9 @@ module JPTType
     case [dt, rt]
     in a, b if a == b
       true
-    in [:nodes, :value] | [:nodes, :logical]
+    in [:nodes, :value]
+      query_singular?(ast)
+    in [:nodes, :logical]
       true
     else
       warn "*** Cannot use #{ast} with declared_type #{dt||:undefined} for required type #{rt}#{s}"
@@ -216,7 +225,7 @@ class JPT
 
   def filt_to_logical(val)
     case val
-    in [:nodes, v]
+    in [(:nodes|:onenode), v]
       v != []
     in [:logical, v]
       v
@@ -225,10 +234,11 @@ class JPT
 
   def filt_to_value(val)
     case val
-    in [:nodes, v]
-      if v.length == 1
+    in [:onenode, v]
+      case v.length
+      in 1
         v[0]
-      else
+      in 0
         :nothing
       end
     in [:value, v]
@@ -242,9 +252,11 @@ class JPT
     # warn "***B #{logexp.inspect} #{root_node.inspect} #{curr_node.inspect}"
     case logexp
     in ["@", *]
-      [:nodes, select_query(logexp, curr_node, root_node, curr_node)]
+      rt = query_singular?(logexp) ? :onenode : :nodes
+      [rt, select_query(logexp, curr_node, root_node, curr_node)]
     in ["$", *]
-      [:nodes, select_query(logexp, root_node, root_node, curr_node)]
+      rt = query_singular?(logexp) ? :onenode : :nodes
+      [rt, select_query(logexp, root_node, root_node, curr_node)]
     in [("==" | "!=" | "<" | ">" | "<=" | ">="), a, b]
       lhs = filt_to_value(filt_apply(a, root_node, curr_node)) rescue :nothing
       rhs = filt_to_value(filt_apply(b, root_node, curr_node)) rescue :nothing
@@ -299,7 +311,7 @@ class JPT
     in ["func", "count", nodes]
       ty, nodes = filt_apply(nodes, root_node, curr_node)
       [:value,
-       if ty != :nodes
+       if ty != :nodes && ty != :onenode
          warn "*** func count ty #{ty.inspect}"
          0
        else
