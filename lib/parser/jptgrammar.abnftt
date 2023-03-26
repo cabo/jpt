@@ -184,7 +184,7 @@ test-expr           = [logical-not-op S]
       ["not", nest_ast]
     end
   end
-}; LogicalType or
+}; LogicalType or NodesType
 filter-query         = rel-query / jsonpath-query
 rel-query            = current-node-identifier segments {
   def ast
@@ -192,7 +192,6 @@ rel-query            = current-node-identifier segments {
   end
 }
 current-node-identifier = "@"
-
 
 
 comparison-expr     = comparable S comparison-op S comparable {
@@ -216,12 +215,12 @@ comparison-op       = "==" / "!=" /
 singular-query       = rel-singular-query / abs-singular-query
 rel-singular-query   = current-node-identifier singular-query-segments {
   def ast
-    ["@", *singular_path_segments.ast]
+    ["@", *singular_query_segments.ast]
   end
 }
 abs-singular-query   = root-identifier singular-query-segments {
   def ast
-    ["$", *singular_path_segments.ast]
+    ["$", *singular_query_segments.ast]
   end
 }
 singular-query-segments = *(S (name-segment / index-segment)){
