@@ -28,6 +28,14 @@ module JPTType
       :value
     in ["@", *] | ["$", *]
       :nodes
+    in ["not", ast1]
+      declared_as(ast1, :logical, " in #{ast}")
+      :logical
+    in ["and" | "or", *ast1]
+      ast1.each do |astx|
+        declared_as(astx, :logical, " in #{ast}")
+      end
+      :logical
     in ["func", funcname, *funcargs]
       ret, *parms = FUNCTABLE[funcname]
       if parms.length != funcargs.length

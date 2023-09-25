@@ -1,6 +1,6 @@
 Gem::Specification.new do |s|
   s.name = "jpt"
-  s.version = "0.1.2"
+  s.version = "0.1.3"
   s.summary = "JSONPath tools"
   s.description = %q{jpt implements converters and miscellaneous tools for JSONPath}
   s.author = "Carsten Bormann"
